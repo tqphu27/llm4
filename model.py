@@ -1870,7 +1870,8 @@ class MyModel(AIxBlockMLBase):
         
         import gradio as gr
         from transformers import pipeline
-        task = kwargs.get("task", "text-generation")
+        # task = kwargs.get("task", "text-generation")
+        task = kwargs.get("task", "chat")
         model_id = kwargs.get("model_id", "deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B")
         if "deepseek" not in "deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B":
              model_id =  "deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B"
