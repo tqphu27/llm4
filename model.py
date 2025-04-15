@@ -835,75 +835,44 @@ class MyModel(AIxBlockMLBase):
                 if not prompt or prompt == "":
                     prompt = text
 
-                def load_model(task, model_id, temperature=None, top_p=None, top_k=None, max_new_token=None):
-                    from huggingface_hub import login 
-                    hf_access_token = kwargs.get("hf_access_token", "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")
-                    login(token = hf_access_token)
-                    if torch.cuda.is_available():
-                        if torch.cuda.is_bf16_supported():
-                            dtype = torch.bfloat16
-                        else:
-                            dtype = torch.float16
-
-                        print("CUDA is available.")
-                        
-                        if not temperature:
-                            _model = pipeline(
-                            task,
-                            model=model_id, 
-                            torch_dtype=dtype, 
-                            device_map="auto",  # Hoặc có thể thử "cpu" nếu không ổn,
-                            # max_new_tokens=256,
-                            token = "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"
-                            )
-                        else:
-                            _model = pipeline(
-                                task,
-                                model=model_id, 
-                                torch_dtype=dtype, 
-                                device_map="auto",  # Hoặc có thể thử "cpu" nếu không ổn,
-                                # max_new_tokens=256,
-                                token = "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",
-                                max_new_tokens=int(max_new_token),
-                                temperature=float(temperature),
-                                top_k=float(top_k),
-                                top_p=float(top_p)
-                            )
+                from huggingface_hub import login 
+                hf_access_token = kwargs.get("hf_access_token", "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")
+                login(token = hf_access_token)
+                if torch.cuda.is_available():
+                    if torch.cuda.is_bf16_supported():
+                        dtype = torch.bfloat16
                     else:
-                        print("No GPU available, using CPU.")
-                        if not temperature:
-                            _model = pipeline(
-                            task,
-                            model=model_id, 
-                            torch_dtype=dtype, 
-                            device_map="auto",  # Hoặc có thể thử "cpu" nếu không ổn,
-                            # max_new_tokens=256,
-                            token = "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"
-                            )
-                        else:
-                            _model = pipeline(
-                                task,
-                                model=model_id, 
-                                device_map="cpu",
-                                # max_new_tokens=256,
-                                token = "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",
-                                max_new_tokens=int(max_new_token),
-                                temperature=float(temperature),
-                                top_k=float(top_k),
-                                top_p=float(top_p),
-                            )
-                    # try:
-                    #     channel_deploy = f'project/{project_id}/deploy-history'
-                    #     client, sub = setup_client(channel_deploy)
-                    #     send_message(sub,{"refresh": True})
-                    #     client.disconnect()  # Đóng kết nối client
-                    # except Exception as e:
-                    #     print(e)
+                        dtype = torch.float16
 
-                    return _model
-                
-                _model = load_model("text-generation", model_id, temperature, top_p, top_k, max_new_token)
-                response = qa_without_context(_model, prompt)
+                    print("CUDA is available.")
+                    
+                    _model = pipeline(
+                        "text-generation",
+                        model=model_id, #model_id, #"meta-llama/Llama-3.2-3B", meta-llama/Llama-3.3-70B-Instruct
+                        torch_dtype=dtype, 
+                        device_map="auto",  # Hoặc có thể thử "cpu" nếu không ổn,
+                        max_new_tokens=256,
+                        token = "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"
+                    )
+                else:
+                    print("No GPU available, using CPU.")
+                    _model = pipeline(
+                        "text-generation",
+                        model="meta-llama/Llama-3.2-1B-Instruct", #"meta-llama/Llama-3.2-1B-Instruct", #"meta-llama/Llama-3.2-3B", meta-llama/Llama-3.3-70B-Instruct
+                        device_map="cpu",
+                        max_new_tokens=256,
+                        token = "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"
+                    )
+                messages = [
+                    {"role": "system", "content": "You are a pirate chatbot who always responds in pirate speak!"},
+                    {"role": "user", "content": prompt},
+                ]
+                # outputs = _model(
+                #     messages,
+                #     max_new_tokens=256,
+                # )
+                result = _model(messages, max_length=100)
+                generated_text = result[0]['generated_text']
           
                 print(response)
                 predictions.append({
@@ -912,7 +881,7 @@ class MyModel(AIxBlockMLBase):
                         'to_name': "text_output",
                         'type': 'textarea',
                         'value': {
-                            'text': [response]
+                            'text': [generated_text]
                         }
                     }],
                     'model_version': ""
