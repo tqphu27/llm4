@@ -51,6 +51,7 @@ class ActionRequest(BaseModel):
 @app.post("/action")
 async def action(request: ActionRequest):
     try:
+        print(request.command, request.params)
         result = model.action(request.command, **request.params)
         return result
     except Exception as e:
