@@ -812,9 +812,13 @@ class MyModel(AIxBlockMLBase):
             return {"message": "tensorboardx started successfully"}
         
         elif command.lower() == "predict":
-            try:
+            # from misc import get_device_count
+            # try:
                 import torch
-
+                from transformers import pipeline
+            # try:
+                # checkpoint = kwargs.get("checkpoint")
+                # imagebase64 = kwargs.get("image","")
                 prompt = kwargs.get("prompt", None)
                 model_id = kwargs.get("model_id", "deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B")
                 text = kwargs.get("text", None)
@@ -822,653 +826,99 @@ class MyModel(AIxBlockMLBase):
                 task = kwargs.get("task", "")
                 voice = kwargs.get("voice", "")
                 max_new_token = kwargs.get("max_new_token", 256)
-                temperature = kwargs.get("temperature", 0.9)
-                top_k = kwargs.get("top_k", 0.0)
-                top_p = kwargs.get("top_p", 0.6)
-                world_size = kwargs.get("world_size", 1)
-                rank = kwargs.get("rank", 0)
-                master_add = kwargs.get("master_add","0.0.0.0")
-                master_port = kwargs.get("master_port", "23456")
-                framework = kwargs.get("framework", "pytorch")
-                hf_token = kwargs.get("hf_token", "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")
-                
-                import os
-                os.environ['HF_TOKEN'] =  hf_token
-                if len(voice)>0:
-                    import base64
-                    import requests
-                    import torchaudio
-                   
-                    def decode_base64_to_audio(base64_audio, output_file="output.wav"):
-                        # Giải mã Base64 thành nhị phân
-                        audio_data = base64.b64decode(base64_audio)
+                temperature = kwargs.get("temperature", 0.7)
+                top_k = kwargs.get("top_k", 50)
+                top_p = kwargs.get("top_p", 0.95)
+
+                predictions = []
+
+                if not prompt or prompt == "":
+                    prompt = text
+
+                def load_model(task, model_id, temperature=None, top_p=None, top_k=None, max_new_token=None):
+                    from huggingface_hub import login 
+                    hf_access_token = kwargs.get("hf_access_token", "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")
+                    login(token = hf_access_token)
+                    if torch.cuda.is_available():
+                        if torch.cuda.is_bf16_supported():
+                            dtype = torch.bfloat16
+                        else:
+                            dtype = torch.float16
+
+                        print("CUDA is available.")
                         
-                        # Ghi dữ liệu nhị phân vào file âm thanh
-                        with open(output_file, "wb") as audio_file:
-                            audio_file.write(audio_data)
-                        return output_file
-                    
-                    audio_file = decode_base64_to_audio(voice["data"])
-                    file_path = "unity_on_device.ptl"
-
-                    if not os.path.exists(file_path):
-                        url = "https://huggingface.co/facebook/seamless-m4t-unity-small/resolve/main/unity_on_device.ptl"
-                        response = requests.get(url)
-
-                        # Lưu file
-                        with open("unity_on_device.ptl", "wb") as f:
-                            f.write(response.content)
-
-                    audio_input, _ = torchaudio.load(audio_file) # Load waveform using torchaudio
-
-                    s2st_model = torch.jit.load(file_path)
-
-                    with torch.no_grad():
-                        prompt, units, waveform = s2st_model(audio_input, tgt_lang="eng")
-
-                # if not checkpoint:
-                if framework == "huggingface":
-                    print("accelerate")
-                    if int(world_size) > 1:
-                        if int(rank) == 0:
-                                command = (
-                                            "accelerate launch --num_processes {tensor_parallel_size} --num_machines {nnodes} --machine_rank {node_rank} --main_process_ip {host} --main_process_port {port} {file_name}"
-                                        ).format(
-                                            tensor_parallel_size=1,  #world_size*torch.cuda.device_count(),
-                                            hf_model_id=model_id,
-                                            port=master_port,
-                                            host=master_add,
-                                            node_rank=rank,
-                                            nnodes=world_size,
-                                            file_name="./run_distributed_accelerate.py"
-                                        )
-                                subprocess.run(
-                                            command,
-                                            shell=True
-                                        )
-                        
-                                    
+                        if not temperature:
+                            _model = pipeline(
+                            task,
+                            model=model_id, 
+                            torch_dtype=dtype, 
+                            device_map="auto",  # Hoặc có thể thử "cpu" nếu không ổn,
+                            # max_new_tokens=256,
+                            token = "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"
+                            )
                         else:
-                            print("worker node")
-
-                            command = (
-                                "accelerate launch --num_processes {tensor_parallel_size} --num_machines {nnodes} --machine_rank {node_rank} --main_process_ip {host} --main_process_port {port} {file_name}"
-                                ).format(
-                                    tensor_parallel_size=1,  #world_size*torch.cuda.device_count(),
-                                    hf_model_id=model_id,
-                                    port=master_port,
-                                    host=master_add,
-                                    node_rank=rank,
-                                    nnodes=world_size,
-                                    file_name="./run_distributed_accelerate.py"
-                                )
-                            subprocess.run(
-                                command,
-                                shell=True,
-                            )
-                        # import openai
-
-                        # client = openai.Client(base_url=f"https://{master_add}:{master_port}/v1", api_key="None")
-
-                        # response = client.chat.completions.create(
-                        #     model=model_id,
-                        #     messages=[
-                        #         {"role": "user", "content": text},
-                        #     ],
-                        #     temperature=0,
-                        #     max_tokens=64,
-                        # )
-                        # print(response)
-                        # return {"message": "predict completed successfully", "result": response}
-                    else:
-                                if torch.cuda.device_count() > 1: # multi gpu
-                                                
-                                    command = (
-                                        "accelerate launch --multi_gpu  --num_processes {tensor_parallel_size} --num_machines {nnodes} --machine_rank {node_rank} --main_process_ip {host} --main_process_port {port} {file_name}"
-                                        ).format(
-                                            tensor_parallel_size=1,  #world_size*torch.cuda.device_count(),
-                                            hf_model_id=model_id,
-                                            port=master_port,
-                                            host=master_add,
-                                            node_rank=rank,
-                                            nnodes=world_size,
-                                            file_name="./run_distributed_accelerate.py"
-                                        )
-                                    subprocess.run(
-                                        command,
-                                        shell=True,
-                                    )
-                                    
-                                elif torch.cuda.device_count() == 1: # one gpu
-                                    command = (
-                                        "accelerate launch --num_processes {tensor_parallel_size} --num_machines {nnodes} --machine_rank {node_rank} --main_process_ip {host} --main_process_port {port} {file_name}"
-                                        ).format(
-                                            tensor_parallel_size=1,  #world_size*torch.cuda.device_count(),
-                                            hf_model_id=model_id,
-                                            port=master_port,
-                                            host=master_add,
-                                            node_rank=rank,
-                                            nnodes=world_size,
-                                            file_name="./run_distributed_accelerate.py"
-                                        )
-                                    subprocess.run(
-                                        command,
-                                        shell=True,
-                                    )
-
-                                else: # no gpu
-                                    command = (
-                                        "accelerate launch --cpu {file_name}"
-                                        ).format(
-                                            tensor_parallel_size=1,  #world_size*torch.cuda.device_count(),
-                                            hf_model_id=model_id,
-                                            port=master_port,
-                                            host=master_add,
-                                            node_rank=rank,
-                                            nnodes=world_size,
-                                            file_name="./run_distributed_accelerate.py"
-                                        )
-                                    subprocess.run(
-                                        command,
-                                        shell=True,
-                                    )
-                elif framework == "sglang":
-                    print("sglang")
-                    # python3 -m sglang.launch_server --model-path deepseek-ai/DeepSeek-V3 --tp 16 --dist-init-addr 192.168.114.10:20000 --nnodes 2 --node-rank 0 --trust-remote-code --host 0.0.0.0 --port 40000
-
-                    # !python3 -m sglang.launch_server --model tiiuae/Falcon3-1B-Instruct --trust-remote-code --tp 1 --port 30000 --host 0.0.0.0
-                    # command = (
-                    #             "python3.10 -m sglang.launch_server --model {hf_model_id} --trust-remote-code --tp 1 --port {port} --host {host} --dist-init-addr {host}:{port}"
-                    #             ).format(
-                    #                 hf_model_id=hf_model_id,
-                    #                 port=master_port,
-                    #                 host=master_add,
-                    #             )
-                    # subprocess.run(
-                    #     command,
-                    #     shell=True)
-                    if int(world_size) > 1:
-                        if int(rank) == 0:
-                            command = (
-                                "python3.10 -m sglang.launch_server --model {hf_model_id} --trust-remote-code --tp {tensor_parallel_size} --nnodes {nnodes} --node-rank {node_rank} --dist-init-addr {host}:123456 --port {port} --host 0.0.0.0"
-                            ).format(
-                                tensor_parallel_size= torch.cuda.device_count(),
-                                hf_model_id=model_id,
-                                port=master_port,
-                                host=master_add,
-                                node_rank=rank,
-                                nnodes=world_size,
-                            )
-                            subprocess.run(
-                                command,
-                                shell=True,
-                            )
-                            
-                        else:
-                            print("worker node")
-
-                            command = (
-                                    "python3.10 -m sglang.launch_server --model {hf_model_id} --trust-remote-code --tp {tensor_parallel_size} --dist-init-addr {host}:123456 --port {port} --host 0.0.0.0"
-                                ).format(
-                                    tensor_parallel_size= torch.cuda.device_count(),
-                                    hf_model_id=model_id,
-                                    port=master_port,
-                                    host=master_add,
-                                    node_rank=rank,
-                                    nnodes=world_size,
-                                )
-                            subprocess.run(
-                                command,
-                                shell=True,
-                            )
-                        # import openai
-
-                        # client = openai.Client(base_url=f"https://{master_add}:{master_port}/v1", api_key="None")
-
-                        # response = client.chat.completions.create(
-                        #     model=model_id,
-                        #     messages=[
-                        #         {"role": "user", "content": text},
-                        #     ],
-                        #     temperature=0,
-                        #     max_tokens=64,
-                        # )
-                        # print(response)
-                        # return {"message": "predict completed successfully", "result": response}
-                    else:
-                        if torch.cuda.device_count() > 1: # multi gpu
-                                        
-                            command = (
-                                "python3.10 -m sglang.launch_server --model {hf_model_id} --trust-remote-code --tp {tensor_parallel_size} --nnodes {nnodes} --node-rank {node_rank} --dist-init-addr {host}:123456 --port {port} --host 0.0.0.0"
-                            ).format(
-                                tensor_parallel_size= torch.cuda.device_count(),
-                                hf_model_id=model_id,
-                                port=master_port,
-                                host=master_add,
-                                node_rank=rank,
-                                nnodes=world_size,
-                            )
-                            subprocess.run(
-                                command,
-                                shell=True,
-                            )
-                            
-                        elif torch.cuda.device_count() == 1: # one gpu
-                            command = (
-                                "python3.10 -m sglang.launch_server --model {hf_model_id} --trust-remote-code --tp {tensor_parallel_size} --nnodes {nnodes} --node-rank {node_rank} --dist-init-addr {host}:123456 --port {port} --host 0.0.0.0"
-                            ).format(
-                                tensor_parallel_size= torch.cuda.device_count(),
-                                hf_model_id=model_id,
-                                port=master_port,
-                                host=master_add,
-                                node_rank=rank,
-                                nnodes=world_size,
-                            )
-                            subprocess.run(
-                                command,
-                                shell=True,
-                            )
-
-                        else: # no gpu
-                            command = (
-                                "python3.10 -m sglang.launch_server --model {hf_model_id} --trust-remote-code --nnodes {nnodes} --node-rank {node_rank} --dist-init-addr {host}:123456 --port {port} --host 0.0.0.0"
-                            ).format(
-                               tensor_parallel_size= torch.cuda.device_count(),
-                                hf_model_id=model_id,
-                                port=master_port,
-                                host=master_add,
-                                node_rank=rank,
-                                nnodes=world_size,
-                            )
-                            subprocess.run(
-                                command,
-                                shell=True,
-                            )
-                     # https://docs.sglang.ai/start/send_request.html
-                        # import requests
-                        # url = "http://{master_add}:{master_port}/v1/chat/completions"
-
-                        # data = {
-                        #     "model":hf_model_id,
-                        #     "messages": [{"role": "user", "content": "What is the capital of France?"}],
-                        # }
-
-                        # response = requests.post(url, json=data)
-                        # print(response.json())
-
-                        # import openai
-
-                        # client = openai.Client(base_url=f"https://{master_add}:{master_port}/v1", api_key="None")
-
-                        # response = client.chat.completions.create(
-                        #     model=model_id,
-                        #     messages=[
-                        #         {"role": "user", "content": text},
-                        #     ],
-                        #     temperature=0,
-                        #     max_tokens=64,
-                        # )
-                        # print(response)
-                        # return {"message": "predict completed successfully", "result": response}
-                elif framework == "vllm":
-                    print("vllm")
-                    # command = (
-                    #             "vllm serve {hf_model_id} --tensor-parallel-size {tensor_parallel_size} --enforce-eager --trust-remote-code --port {port} --host {host}"
-                    #             ).format(
-                    #                 hf_model_id=hf_model_id,
-                    #                 tensor_parallel_size=1,
-                    #                 port=master_port,
-                    #                 host=master_add,
-                    #             )
-                    # subprocess.run(
-                    #     command,
-                    #     shell=True)
-                    # https://docs.vllm.ai/en/latest/getting_started/quickstart.html
-                    # python -m vllm.entrypoints.openai.api_server --host 0.0.0.0 --port 12345 --max-model-len 65536 --trust-remote-code --tensor-parallel-size 8 --quantization moe_wna16 --gpu-memory-utilization 0.97 --kv-cache-dtype fp8_e5m2 --calculate-kv-scales --served-model-name deepseek-reasoner --model cognitivecomputations/DeepSeek-R1-AWQ
-                    #======== init ddp netwoprk =================
-                    if int(world_size) > 1:
-                        if int(rank) == 0:
-                            command = (
-                                "vllm serve {hf_model_id} --tensor-parallel-size {tensor_parallel_size} --pipeline-parallel-size {world_size} --enforce-eager --trust-remote-code --port {port} --host {host}"
-                            ).format(
-                                tensor_parallel_size=torch.cuda.device_count(),
-                                world_size=world_size,
-                                hf_model_id=model_id,
-                                port=master_port,
-                                host=master_add,
-                                
-                            )
-                            subprocess.run(
-                                command,
-                                shell=True,
-                            )
-                            
-                        else:
-                            print("worker node")
-
-                            command = (
-                                    "vllm serve {hf_model_id} --tensor-parallel-size {tensor_parallel_size} --pipeline-parallel-size {world_size} --enforce-eager --trust-remote-code --port {port} --host {host}"
-                                ).format(
-                                    tensor_parallel_size=torch.cuda.device_count(),
-                                    world_size=world_size,
-                                    hf_model_id=model_id,
-                                    port=master_port,
-                                    host=master_add,
-                                )
-                            subprocess.run(
-                                command,
-                                shell=True,
-                            )
-                        # from openai import OpenAI
-                        # # Set OpenAI's API key and API base to use vLLM's API server.
-                        # openai_api_key = "EMPTY"
-                        # openai_api_base = f"https://{master_add}:{master_port}/v1"
-
-                        # client = OpenAI(
-                        #     api_key=openai_api_key,
-                        #     base_url=openai_api_base,
-                        # )
-
-                        # chat_response = client.chat.completions.create(
-                        #     model=model_id,
-                        #     messages=[
-                        #         {"role": "system", "content": "You are a helpful assistant."},
-                        #         {"role": "user", "content": text},
-                        #     ]
-                        # )
-                        # print("Chat response:", chat_response)
-                        # return {"message": "predict completed successfully", "result": chat_response}
-                    else:
-                        if torch.cuda.device_count() > 1: # multi gpu
-                                        
-                            command = (
-                                "vllm serve {hf_model_id} --tensor-parallel-size {tensor_parallel_size} --pipeline-parallel-size {world_size} --enforce-eager --trust-remote-code --port {port} --host {host}"
-                            ).format(
-                                tensor_parallel_size=torch.cuda.device_count(),
-                                    world_size=world_size,
-                                hf_model_id=model_id,
-                                port=master_port,
-                                host=master_add,
-                            )
-                            subprocess.run(
-                                command,
-                                shell=True,
-                            )
-                            # from openai import OpenAI
-                            # # Set OpenAI's API key and API base to use vLLM's API server.
-                            # openai_api_key = "EMPTY"
-                            # openai_api_base = f"https://{master_add}:{master_port}/v1"
-
-                            # client = OpenAI(
-                            #     api_key=openai_api_key,
-                            #     base_url=openai_api_base,
-                            # )
-
-                            # chat_response = client.chat.completions.create(
-                            #     model=model_id,
-                            #     messages=[
-                            #         {"role": "system", "content": "You are a helpful assistant."},
-                            #         {"role": "user", "content": text},
-                            #     ]
-                            # )
-                            # print("Chat response:", chat_response)
-                            # return {"message": "predict completed successfully", "result": chat_response}
-                        elif torch.cuda.device_count() == 1: # one gpu
-                            command = (
-                               "vllm serve {hf_model_id} --tensor-parallel-size {tensor_parallel_size} --pipeline-parallel-size {world_size} --enforce-eager --trust-remote-code --port {port} --host {host}"
-                            ).format(
-                                tensor_parallel_size=torch.cuda.device_count(),
-                                    world_size=world_size,
-                                hf_model_id=model_id,
-                                port=master_port,
-                                host=master_add,
-                            )
-                            subprocess.run(
-                                command,
-                                shell=True,
-                            )
-
-                        else: # no gpu
-                            command = (
-                               "vllm serve {hf_model_id} --enforce-eager --trust-remote-code --gpu-memory-utilization 0.97 --port {port} --host {host}"
-                            ).format(
-                                tensor_parallel_size=world_size*torch.cuda.device_count(),
-                                hf_model_id=model_id,
-                                port=master_port,
-                                host=master_add,
-                            )
-                            subprocess.run(
-                                command,
-                                shell=True,
-                            )
-                        #======== end init ddp netwoprk =================
-                        #call request predict
-                        # curl http://{master_add}:{master_port}/v1/chat/completions \
-                        # -H "Content-Type: application/json" \
-                        # -d '{
-                        #     "model":hf_model_id,
-                        #     "messages": [
-                        #         {"role": "system", "content": "You are a helpful assistant."},
-                        #         {"role": "user", "content": "Who won the world series in 2020?"}
-                        #     ]
-                        # }'
-                        # from openai import OpenAI
-                        # # Set OpenAI's API key and API base to use vLLM's API server.
-                        # openai_api_key = "EMPTY"
-                        # openai_api_base = f"https://{master_add}:{master_port}/v1"
-
-                        # client = OpenAI(
-                        #     api_key=openai_api_key,
-                        #     base_url=openai_api_base,
-                        # )
-
-                        # chat_response = client.chat.completions.create(
-                        #     model=model_id,
-                        #     messages=[
-                        #         {"role": "system", "content": "You are a helpful assistant."},
-                        #         {"role": "user", "content": text},
-                        #     ]
-                        # )
-                        # print("Chat response:", chat_response)
-                        # return {"message": "predict completed successfully", "result": chat_response}
-                else:
-                    print("pytorch")
-                    #======== init ddp netwoprk =================
-                    if int(world_size) > 1:
-                        if int(rank) == 0:
-                            print("CUDA is available. world_size > 1 and rank=0")
-                            command = (
-                                        "torchrun --nnodes {nnodes} --node_rank {node_rank} --nproc_per_node {nproc_per_node} "
-                                        "--master_addr {master_addr} --master_port {master_port} {file_name} --predict_args {predict_args} --backend {backend} --rank {node_rank} --channel_log {channel_log} --hf_model_id {hf_model_id} --hf_hub_token {hf_hub_token}"
-                                    ).format(
-                                         nnodes=int(world_size),
-                                        node_rank= int(rank),
-                                        nproc_per_node=torch.cuda.device_count(),
-                                        master_addr=master_add,
-                                        master_port=master_port,
-                                        file_name="./run_distributed_pytorch.py",
-                                        predict_args = '{ "prompt": "text", "text": "text", "task": "task", "voice": "voice", "max_new_token": "max_new_token", "temperature": "temperature", "top_k": "top_k", "top_p": "top_p", "token_length": "token_length"}',
-                                        backend = "nccl",
-                                        channel_log="",
-                                        hf_model_id=model_id,
-                                        hf_hub_token=hf_token #'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'
-                                    )
-                            print(command)
-                            response = subprocess.run(
-                                command,
-                                shell=True
-                            )
-                            if response.returncode == 0:
-                                response_info_lines = response.stdout.strip()
-                            else:
-                                response_info_lines = ""
-                            return {"message": "predict completed successfully", "result": response_info_lines}
-                            
-                        else:
-                            print("worker node")
-
-                            print("CUDA is available. > 1")
-                            command = (
-                                        "torchrun --nnodes {nnodes} --node_rank {node_rank} --nproc_per_node {nproc_per_node} "
-                                        "--master_addr {master_addr} --master_port {master_port} {file_name} --predict_args {predict_args} --backend {backend} --rank {node_rank} --channel_log {channel_log} --hf_model_id {hf_model_id} --hf_hub_token {hf_hub_token}"
-                                    ).format(
-                                         nnodes=int(world_size),
-                                        node_rank= int(rank),
-                                        nproc_per_node=torch.cuda.device_count(),
-                                        master_addr=master_add,
-                                        master_port=master_port,
-                                        file_name="./run_distributed_pytorch.py",
-                                        predict_args = '{ "prompt": "text", "text": "text", "task": "task", "voice": "voice", "max_new_token": "max_new_token", "temperature": "temperature", "top_k": "top_k", "top_p": "top_p", "token_length": "token_length"}',
-                                        backend = "nccl",
-                                        channel_log="",
-                                        hf_model_id=model_id,
-                                        hf_hub_token=hf_token #'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'
-                                    )
-                            response = subprocess.run(
-                                command,
-                                shell=True
-                            )
-                            if response.returncode == 0:
-                                response_info_lines = response.stdout.strip()
-                            else:
-                                response_info_lines = ""
-                            return {"message": "predict completed successfully", "result": response_info_lines}
-                            
-                    else:
-                        if torch.cuda.device_count() > 1: # multi gpu
-                            print("CUDA is available. > 1")
-                            command = (
-                                        "torchrun --nnodes {nnodes} --node_rank {node_rank} --nproc_per_node {nproc_per_node} "
-                                        "--master_addr {master_addr} --master_port {master_port} {file_name} --predict_args {predict_args} --backend {backend} --rank {node_rank} --channel_log {channel_log} --hf_model_id {hf_model_id} --hf_hub_token {hf_hub_token}"
-                                    ).format(
-                                         nnodes=int(world_size),
-                                        node_rank= int(rank),
-                                        nproc_per_node=torch.cuda.device_count(),
-                                        master_addr=master_add,
-                                        master_port=master_port,
-                                        file_name="./run_distributed_pytorch.py",
-                                        predict_args = '{ "prompt": "text", "text": "text", "task": "task", "voice": "voice", "max_new_token": "max_new_token", "temperature": "temperature", "top_k": "top_k", "top_p": "top_p", "token_length": "token_length"}',
-                                        backend = "nccl",
-                                        channel_log="",
-                                        hf_model_id=model_id,
-                                        hf_hub_token=hf_token #'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'
-                                    )
-                            print(command)
-                            response = subprocess.run(
-                                command,
-                                shell=True
-                            )
-                            if response.returncode == 0:
-                                response_info_lines = response.stdout.strip()
-                            else:
-                                response_info_lines = ""
-                            return {"message": "predict completed successfully", "result": response_info_lines}
-                        elif torch.cuda.device_count() == 1: # one gpu
- 
-                            print("CUDA is available.")
-                            
                             _model = pipeline(
                                 task,
                                 model=model_id, 
+                                torch_dtype=dtype, 
                                 device_map="auto",  # Hoặc có thể thử "cpu" nếu không ổn,
+                                # max_new_tokens=256,
+                                token = "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",
                                 max_new_tokens=int(max_new_token),
                                 temperature=float(temperature),
                                 top_k=float(top_k),
-                                top_p=float(top_p),
-                                token=hf_token #'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'
+                                top_p=float(top_p)
                             )
-                          
-                            predictions = []
-
-                            if task == "question-answering":
-                                print("Question answering")
-                                if text and prompt:
-                                    generated_text = qa_with_context(_model, text, prompt)
-                                elif text and not prompt:
-                                    generated_text = qa_without_context(_model, text)
-                                else:
-                                    generated_text = qa_with_context(_model, prompt)
-                            
-                            elif task == "text-classification":
-                                generated_text = text_classification(_model, text, prompt)
-                            
-                            elif task == "summarization":
-                                generated_text = text_summarization(_model, text)
-
-                            else:
-                                if not prompt or prompt == "":
-                                    prompt = text
-
-                                result = _model(prompt, max_length=token_length)
-                                generated_text = result[0]['generated_text']
-
-                            predictions.append({
-                                'result': [{
-                                    'from_name': "generated_text",
-                                    'to_name': "text_output",
-                                    'type': 'textarea',
-                                    'value': {
-                                        'text': [generated_text]
-                                    }
-                                }],
-                                'model_version': ""
-                            })
-
-                            return {"message": "predict completed successfully", "result": predictions}
-
-                        else: # no gpu
-                            
-                            print("No GPU available, using CPU.")
+                    else:
+                        print("No GPU available, using CPU.")
+                        if not temperature:
+                            _model = pipeline(
+                            task,
+                            model=model_id, 
+                            torch_dtype=dtype, 
+                            device_map="auto",  # Hoặc có thể thử "cpu" nếu không ổn,
+                            # max_new_tokens=256,
+                            token = "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"
+                            )
+                        else:
                             _model = pipeline(
                                 task,
                                 model=model_id, 
                                 device_map="cpu",
+                                # max_new_tokens=256,
+                                token = "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",
                                 max_new_tokens=int(max_new_token),
                                 temperature=float(temperature),
                                 top_k=float(top_k),
                                 top_p=float(top_p),
-                                token=hf_token #'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'
                             )
-                            predictions = []
+                    # try:
+                    #     channel_deploy = f'project/{project_id}/deploy-history'
+                    #     client, sub = setup_client(channel_deploy)
+                    #     send_message(sub,{"refresh": True})
+                    #     client.disconnect()  # Đóng kết nối client
+                    # except Exception as e:
+                    #     print(e)
 
-                            if task == "question-answering":
-                                print("Question answering")
-                                if text and prompt:
-                                    generated_text = qa_with_context(_model, text, prompt)
-                                elif text and not prompt:
-                                    generated_text = qa_without_context(_model, text)
-                                else:
-                                    generated_text = qa_with_context(_model, prompt)
-                            
-                            elif task == "text-classification":
-                                generated_text = text_classification(_model, text, prompt)
-                            
-                            elif task == "summarization":
-                                generated_text = text_summarization(_model, text)
+                    return _model
+                
+                _model = load_model("text-generation", model_id, temperature, top_p, top_k, max_new_token)
+                response = qa_without_context(_model, prompt)
+          
+                print(response)
+                predictions.append({
+                    'result': [{
+                        'from_name': "generated_text",
+                        'to_name': "text_output",
+                        'type': 'textarea',
+                        'value': {
+                            'text': [response]
+                        }
+                    }],
+                    'model_version': ""
+                })
 
-                            else:
-                                if not prompt or prompt == "":
-                                    prompt = text
-
-                                result = _model(prompt, max_length=token_length)
-                                generated_text = result[0]['generated_text']
-
-                            predictions.append({
-                                'result': [{
-                                    'from_name': "generated_text",
-                                    'to_name': "text_output",
-                                    'type': 'textarea',
-                                    'value': {
-                                        'text': [generated_text]
-                                    }
-                                }],
-                                'model_version': ""
-                            })
-
-                            return {"message": "predict completed successfully", "result": predictions}
-                        #======== end init ddp netwoprk =================
-            except Exception as e:
-                return {"message": f"predict failed:{e}", "result": None}
+                return {"message": "predict completed successfully", "result": predictions}
         elif command.lower() == "prompt_sample":
                 task = kwargs.get("task", "")
                 if task == "question-answering":
