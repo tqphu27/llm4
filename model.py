@@ -874,7 +874,7 @@ class MyModel(AIxBlockMLBase):
                 # result = _model(prompt, max_length=100)
                 generated_text = qa_without_context(_model, prompt)
           
-                print(response)
+                print(generated_text)
                 predictions.append({
                     'result': [{
                         'from_name': "generated_text",
