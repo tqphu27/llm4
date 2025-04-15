@@ -858,21 +858,21 @@ class MyModel(AIxBlockMLBase):
                     print("No GPU available, using CPU.")
                     _model = pipeline(
                         "text-generation",
-                        model="meta-llama/Llama-3.2-1B-Instruct", #"meta-llama/Llama-3.2-1B-Instruct", #"meta-llama/Llama-3.2-3B", meta-llama/Llama-3.3-70B-Instruct
+                        model=model_id, #"meta-llama/Llama-3.2-1B-Instruct", #"meta-llama/Llama-3.2-3B", meta-llama/Llama-3.3-70B-Instruct
                         device_map="cpu",
                         max_new_tokens=256,
                         token = "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"
                     )
-                messages = [
-                    {"role": "system", "content": "You are a pirate chatbot who always responds in pirate speak!"},
-                    {"role": "user", "content": prompt},
-                ]
+                # messages = [
+                #     {"role": "system", "content": "You are a pirate chatbot who always responds in pirate speak!"},
+                #     {"role": "user", "content": prompt},
+                # ]
                 # outputs = _model(
                 #     messages,
                 #     max_new_tokens=256,
                 # )
-                result = _model(messages, max_length=100)
-                generated_text = result[0]['generated_text']
+                # result = _model(prompt, max_length=100)
+                generated_text = qa_without_context(_model, prompt)
           
                 print(response)
                 predictions.append({
