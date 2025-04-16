@@ -147,7 +147,8 @@ from function_ml import connect_project, download_dataset, upload_checkpoint
 
 #     print("upload done")
 #     return checkpoint_name
-
+import uuid
+CHANNEL_STATUS = {}
 class MyModel(AIxBlockMLBase):
 
     # def predict(self, tasks: List[Dict], context: Optional[Dict] = None, **kwargs) -> List[Dict]:
@@ -239,6 +240,20 @@ class MyModel(AIxBlockMLBase):
                 log_queue, logging_thread = start_queue(channel_log)
                 write_log(log_queue)
 
+
+                channel_name = f"{hf_model_id}_{str(uuid.uuid4())[:8]}"
+        
+                # Đặt trạng thái kênh là "training"
+                CHANNEL_STATUS[channel_name] = {
+                        "status": "training",
+                        "hf_model_id": hf_model_id,
+                        "command": command,
+                        "created_at": time.time()
+                    }
+                print(f"🚀 Đã bắt đầu training kênh: {channel_name}")
+
+            
+
                 # hyperparameter = kwargs.get("hyperparameter")
 
                 # !pip install nvidia-ml-py
@@ -283,6 +298,7 @@ class MyModel(AIxBlockMLBase):
                                 ),
                                 shell=True,
                             )
+                    print("===Train===")
                     # https://github.com/huggingface/accelerate/issues/1474
                     if framework == "huggingface":
                         if int(world_size) > 1:
@@ -291,7 +307,7 @@ class MyModel(AIxBlockMLBase):
                                 #  --dynamo_backend 'no' \
                                 # --rdzv_backend c10d
                                 command = (
-                                        "venv/bin/accelerate launch --num_processes {num_processes} --num_machines {SLURM_NNODES} --machine_rank 0 --main_process_ip {head_node_ip} --main_process_port {port} {file_name} --training_args_json {json_file} --dataset_local {dataset_path} --channel_log {channel_log} --hf_model_id {hf_model_id} --push_to_hub {push_to_hub} --push_to_hub_token {push_to_hub_token} --model_id {model_id}"
+                                        "accelerate launch --num_processes {num_processes} --num_machines {SLURM_NNODES} --machine_rank 0 --main_process_ip {head_node_ip} --main_process_port {port} {file_name} --training_args_json {json_file} --dataset_local {dataset_path} --channel_log {channel_log} --hf_model_id {hf_model_id} --push_to_hub {push_to_hub} --push_to_hub_token {push_to_hub_token} --model_id {model_id}"
                                     ).format(
                                         num_processes=world_size*torch.cuda.device_count(),
                                         SLURM_NNODES=world_size,
@@ -317,7 +333,7 @@ class MyModel(AIxBlockMLBase):
                                 print("worker node")
                                 # --rdzv_backend c10d
                                 command = (
-                                        "venv/bin/accelerate launch --num_processes {num_processes} --num_machines {SLURM_NNODES} --machine_rank {machine_rank} --main_process_ip {head_node_ip} --main_process_port {port} {file_name} --training_args_json {json_file} --dataset_local {dataset_path} --channel_log {channel_log} --hf_model_id {hf_model_id} --push_to_hub {push_to_hub} --push_to_hub_token {push_to_hub_token} --model_id {model_id}"
+                                        "accelerate launch --num_processes {num_processes} --num_machines {SLURM_NNODES} --machine_rank {machine_rank} --main_process_ip {head_node_ip} --main_process_port {port} {file_name} --training_args_json {json_file} --dataset_local {dataset_path} --channel_log {channel_log} --hf_model_id {hf_model_id} --push_to_hub {push_to_hub} --push_to_hub_token {push_to_hub_token} --model_id {model_id}"
                                     ).format(
                                         num_processes=world_size*torch.cuda.device_count(),
                                         SLURM_NNODES=world_size,
@@ -349,7 +365,7 @@ class MyModel(AIxBlockMLBase):
                                             # --num_machines {SLURM_NNODES} \
                                             # --num_processes {num_processes}
                                 command = (
-                                        "venv/bin/accelerate launch --multi_gpu --num_machines {SLURM_NNODES} --machine_rank 0 --num_processes {num_processes} {file_name} --training_args_json {json_file}  --dataset_local {dataset_path} --channel_log {channel_log} --hf_model_id {hf_model_id} --push_to_hub {push_to_hub} --push_to_hub_token {push_to_hub_token} --model_id {model_id}"
+                                        "accelerate launch --multi_gpu --num_machines {SLURM_NNODES} --machine_rank 0 --num_processes {num_processes} {file_name} --training_args_json {json_file}  --dataset_local {dataset_path} --channel_log {channel_log} --hf_model_id {hf_model_id} --push_to_hub {push_to_hub} --push_to_hub_token {push_to_hub_token} --model_id {model_id}"
                                     ).format(
                                         num_processes=world_size*torch.cuda.device_count(),
                                         SLURM_NNODES=world_size,
@@ -385,7 +401,7 @@ class MyModel(AIxBlockMLBase):
                                 # --num_cpu_threads_per_process=2 --num_processes {num_processes} \
                                 #     --num_machines {SLURM_NNODES} \
                                 command = (
-                                    "venv/bin/accelerate launch {file_name} --training_args_json {json_file}  --dataset_local {dataset_path} --channel_log {channel_log} --hf_model_id {hf_model_id} --push_to_hub {push_to_hub} --push_to_hub_token {push_to_hub_token} --model_id {model_id}"
+                                    "accelerate launch {file_name} --training_args_json {json_file}  --dataset_local {dataset_path} --channel_log {channel_log} --hf_model_id {hf_model_id} --push_to_hub {push_to_hub} --push_to_hub_token {push_to_hub_token} --model_id {model_id}"
                                 ).format(
                                     # num_processes=os.environ.get("num_processes", num_processes),
                                     # SLURM_NNODES=os.environ.get("SLURM_NNODES", world_size),
@@ -412,7 +428,7 @@ class MyModel(AIxBlockMLBase):
                                 # python3.10 -m pip install -r requirements.txt
                             else: # no gpu
                                 command = (
-                                        "venv/bin/accelerate launch --cpu {file_name} --training_args_json {json_file} --dataset_local {dataset_path} --channel_log {channel_log} --hf_model_id {hf_model_id} --push_to_hub {push_to_hub} --push_to_hub_token {push_to_hub_token} --model_id {model_id}"
+                                        "accelerate launch --cpu {file_name} --training_args_json {json_file} --dataset_local {dataset_path} --channel_log {channel_log} --hf_model_id {hf_model_id} --push_to_hub {push_to_hub} --push_to_hub_token {push_to_hub_token} --model_id {model_id}"
                                     ).format(
                                         file_name="./run_distributed_accelerate.py", 
                                         json_file=json_file,
@@ -451,7 +467,7 @@ class MyModel(AIxBlockMLBase):
                                 ),
                                 shell=True,
                             )
-                        # print(process.stdout.replace("venv/bin/torchrun: ",""))
+                        # print(process.stdout.replace("torchrun: ",""))
                         if int(world_size) > 1:
                             if rank == 0:
                                 print("master node")
@@ -464,7 +480,7 @@ class MyModel(AIxBlockMLBase):
                                 #     f"--lora_dropout {lora_dropout} --bias {bias} --target_modules {target_modules} --task_type {task_type}"
                                 #  --dynamo_backend 'no' \
                                 command = (
-                                        "venv/bin/torchrun --nnodes {nnodes} --node_rank {node_rank} --nproc_per_node {nproc_per_node} "
+                                        "torchrun --nnodes {nnodes} --node_rank {node_rank} --nproc_per_node {nproc_per_node} "
                                         "--master_addr {master_addr} --master_port {master_port} {file_name} --training_args_json {json_file} --dataset_local {dataset_path} --channel_log {channel_log} --hf_model_id {hf_model_id} --push_to_hub {push_to_hub} --push_to_hub_token {push_to_hub_token} --model_id {model_id}"
                                     ).format(
                                          nnodes=int(world_size),
@@ -498,7 +514,7 @@ class MyModel(AIxBlockMLBase):
                                 #     f"--learning_rate {learning_rate} --max_grad_norm {max_grad_norm} --lora_alpha {lora_alpha} " \
                                 #     f"--lora_dropout {lora_dropout} --bias {bias} --target_modules {target_modules} --task_type {task_type}"
                                 command = (
-                                        "venv/bin/torchrun --nnodes {nnodes} --node_rank {node_rank} --nproc_per_node {nproc_per_node} "
+                                        "torchrun --nnodes {nnodes} --node_rank {node_rank} --nproc_per_node {nproc_per_node} "
                                         "--master_addr {master_addr} --master_port {master_port} {file_name} --training_args_json {json_file} --dataset_local {dataset_path} --channel_log {channel_log} --hf_model_id {hf_model_id} --push_to_hub {push_to_hub} --push_to_hub_token {push_to_hub_token} --model_id {model_id}"
                                     ).format(
                                          nnodes=int(world_size),
@@ -525,7 +541,7 @@ class MyModel(AIxBlockMLBase):
                                 # run_train(command)
                         else:
                             command = (
-                                        "venv/bin/torchrun --nnodes {nnodes} --node_rank {node_rank} --nproc_per_node {nproc_per_node} "
+                                        "torchrun --nnodes {nnodes} --node_rank {node_rank} --nproc_per_node {nproc_per_node} "
                                         "{file_name} --training_args_json {json_file} --dataset_local {dataset_path} --channel_log {channel_log} --hf_model_id {hf_model_id} --push_to_hub {push_to_hub} --push_to_hub_token {push_to_hub_token} --model_id {model_id}"
                                     ).format(
                                         nnodes=int(world_size),
@@ -773,6 +789,7 @@ class MyModel(AIxBlockMLBase):
                     #         del model
                     #         del trainer
                     #         torch.cuda.empty_cache()
+                    CHANNEL_STATUS[channel_name] = "done"
                     output_dir = "./data/checkpoint"
                     print(push_to_hub)
                     if push_to_hub:
@@ -807,7 +824,7 @@ class MyModel(AIxBlockMLBase):
                 train_thread = threading.Thread(target=func_train_model, args=(clone_dir, project_id, token, checkpoint_version, checkpoint_id, dataset_version, dataset_id,model_id,world_size,rank,master_add,master_port,prompt, absolute_path, channel_log, hf_model_id, push_to_hub, push_to_hub_token,host_name))
                 train_thread.start()
                  
-                return {"message": "train completed successfully"}
+                return {"message": "train completed successfully", "channel_name": channel_name}
             # except Exception as e:
             #     return {"message": f"train failed: {e}"}
         elif command.lower() == "stop":
