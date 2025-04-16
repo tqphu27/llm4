@@ -36,7 +36,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-@app.get("/status/{channel}")
+@app.get("/channels/{channel}")
 def check_channel_status(channel: str):
     status_info = CHANNEL_STATUS.get(channel)
     if status_info is None:
