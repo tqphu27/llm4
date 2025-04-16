@@ -48,12 +48,19 @@ def get_all_channels():
     if not CHANNEL_STATUS:
         return {"message": "No channels available"}
     
-    channels = [
-        {
-            "channel": channel,
-            **info
-        } for channel, info in CHANNEL_STATUS.items()
-    ]
+    channels = []
+    for channel, info in CHANNEL_STATUS.items():
+        if isinstance(info, dict):
+            channels.append({
+                "channel": channel,
+                **info
+            })
+        else:
+            channels.append({
+                "channel": channel,
+                "status": info  # fallback nếu info chỉ là string
+            })
+    
     return {"channels": channels}
 
 # Prometheus and Loki configuration
