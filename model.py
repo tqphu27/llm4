@@ -368,8 +368,8 @@ class MyModel(AIxBlockMLBase):
                                 print(command)
                                 print("================2")
                                 process = subprocess.run(
-                                    command
-                                    # shell=True
+                                    command,
+                                    shell=True
                                 )
                                 process = subprocess.run(
                                     command
@@ -404,8 +404,8 @@ class MyModel(AIxBlockMLBase):
                                 print(command)
                                 print("================")
                                 process = subprocess.run(
-                                    command
-                                    # shell=True
+                                    command,
+                                    shell=True
                                 )
                                 #print(process)
                                 # run_train(command)
