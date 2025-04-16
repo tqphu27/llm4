@@ -45,7 +45,7 @@ output_dir="./data/checkpoint"
 
 push_to_hub= True if args.push_to_hub and args.push_to_hub == "True" else False
 hf_model_id = args.hf_model_id if args.hf_model_id else "deepseek-r1-4b"
-push_to_hub_token = args.push_to_hub_token if args.push_to_hub_token else "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"
+push_to_hub_token = args.push_to_hub_token if args.push_to_hub_token else "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"
 
 print(push_to_hub, hf_model_id, push_to_hub_token)
 # Nếu có file JSON, đọc và phân tích nó
