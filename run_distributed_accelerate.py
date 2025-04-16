@@ -65,7 +65,8 @@ else:
   compute_dtype = torch.float16
   attn_implementation = 'sdpa'
 torch.set_grad_enabled(True)
-model_name = args.model_id if args.model_id else "tonyshark/deepseek-r1-4b"
+# model_name = args.model_id if args.model_id else "tonyshark/deepseek-r1-4b"
+model_name = args.model_id if args.model_id else "tonyshark/deepseek-v3-1b"
 #Tokenizer
 print("Download tokenizer", model_name)
 tokenizer = AutoTokenizer.from_pretrained(model_name, add_eos_token=True, use_fast=True, trust_remote_code=True)
