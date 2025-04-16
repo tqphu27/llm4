@@ -267,6 +267,7 @@ training_arguments = TrainingArguments(
         push_to_hub = push_to_hub,
         push_to_hub_model_id=hf_model_id,#[project-id]-[model-name]-[datetime]
         push_to_hub_token=push_to_hub_token,
+        no_cuda=False
 )
 # https://stackoverflow.com/questions/78688141/how-to-choose-dataset-text-field-in-sfttrainer-hugging-face-for-my-llm-model
 
@@ -286,7 +287,35 @@ trainer = SFTTrainer(
         #             },
 )
 
-trainer.train()
+try:
+    trainer.train()
+except RuntimeError as e:
+    if "CUDA out of memory" in str(e):
+        print("⚠️ CUDA OOM detected, switching to CPU...")
+
+        import gc
+        import torch
+        gc.collect()
+        torch.cuda.empty_cache()
+
+        # Move model to CPU
+        model.to("cpu")
+
+        # Cập nhật lại args nếu cần (ví dụ bạn có logic chọn fp16 / bf16)
+        training_arguments.fp16 = False
+        training_arguments.bf16 = False
+        training_arguments.no_cuda = True
+
+        trainer = SFTTrainer(
+            model=model,
+            train_dataset=train_dataset,
+            eval_dataset=eval_dataset,
+            args=training_arguments,
+        )
+
+        trainer.train()
+    else:
+        raise
 
 if push_to_hub:
     trainer.push_to_hub()
