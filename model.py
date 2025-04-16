@@ -808,7 +808,7 @@ class MyModel(AIxBlockMLBase):
                     #         del model
                     #         del trainer
                     #         torch.cuda.empty_cache()
-                    CHANNEL_STATUS[channel_name] = "done"
+                    CHANNEL_STATUS[channel_name]["status"] = "done"
                     output_dir = "./data/checkpoint"
                     print(push_to_hub)
                     if push_to_hub:
