@@ -258,7 +258,7 @@ class MyModel(AIxBlockMLBase):
                     dataset_path = None
                     project = connect_project(host_name, token, project_id)
 
-                    if dataset_version and dataset_id:
+                    if dataset_version and dataset_id and project:
                         dataset_path = os.path.join(clone_dir, f"datasets/{dataset_version}")
 
                         if not os.path.exists(dataset_path):

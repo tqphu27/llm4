@@ -4,16 +4,19 @@ import time
 from aixblock_sdk import Client
 
 def connect_project(url, token, project_id):
-    # AIXBLOCK_URL = 'http://127.0.0.1:8080'
-    # API_KEY = '4b89a6ffb1f14bba6148d9167218e062b4d029dc'
-    # PROJECT_ID = 303
+    try:
+        # AIXBLOCK_URL = 'http://127.0.0.1:8080'
+        # API_KEY = '4b89a6ffb1f14bba6148d9167218e062b4d029dc'
+        # PROJECT_ID = 303
 
-    # connect to AIxBlock
-    axb = Client(url=url, api_key=token)
-    axb.check_connection()
+        # connect to AIxBlock
+        axb = Client(url=url, api_key=token)
+        axb.check_connection()
 
-    project = axb.get_project(project_id)
-    return project
+        project = axb.get_project(project_id)
+        return project
+    except:
+        return None
 
 def download_dataset(project, dataset_id, save_path):
     _, filename = project.download_dataset(dataset_id=dataset_id, save_path=save_path)
