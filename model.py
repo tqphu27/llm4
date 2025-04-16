@@ -364,10 +364,15 @@ class MyModel(AIxBlockMLBase):
                                         model_id=model_id,
                                         push_to_hub_token=push_to_hub_token
                                     )
+                                print("================2")
+                                print(command)
+                                print("================2")
                                 process = subprocess.run(
-                                    command,
-                                    shell=True,
-                                    # capture_output=True, text=True).stdout.strip("\n")
+                                    command
+                                    # shell=True
+                                )
+                                process = subprocess.run(
+                                    command
                                 )
                                 #print(process)
                                 # run_train(command)
@@ -395,10 +400,12 @@ class MyModel(AIxBlockMLBase):
                                     model_id=model_id,
                                     push_to_hub_token=push_to_hub_token
                                 )
+                                print("================")
+                                print(command)
+                                print("================")
                                 process = subprocess.run(
-                                    command,
-                                    shell=True,
-                                    # capture_output=True, text=True).stdout.strip("\n")
+                                    command
+                                    # shell=True
                                 )
                                 #print(process)
                                 # run_train(command)
