@@ -222,9 +222,15 @@ bnb_config = BitsAndBytesConfig(
 )
 #, attn_implementation=attn_implementation
 # quantization_config=bnb_config,
+# model = AutoModelForCausalLM.from_pretrained(
+#           model_name,  device_map={"": 0}, trust_remote_code=True
+# )
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
 model = AutoModelForCausalLM.from_pretrained(
-          model_name,  device_map={"": 0}, trust_remote_code=True
-)
+    model_name,
+    trust_remote_code=True
+).to(device)
 
 # print(model)
 # model = prepare_model_for_kbit_training(model)
@@ -243,9 +249,9 @@ training_arguments = TrainingArguments(
         eval_strategy="steps",
         do_eval=True,
         # optim="paged_adamw_8bit",
-        # per_device_train_batch_size=8,
+        per_device_train_batch_size=1,
         # gradient_accumulation_steps=4,
-        # per_device_eval_batch_size=8,
+        per_device_eval_batch_size=1,
         log_level="debug",
         save_strategy="epoch",
         logging_steps=10,
@@ -271,7 +277,7 @@ trainer = SFTTrainer(
         # peft_config=peft_config,
         # **sfttrainer_args,
         # max_seq_length=512,
-        tokenizer=tokenizer,
+        # tokenizer=tokenizer,
         args=training_arguments
         # dataset_kwargs={
         #                 "add_special_tokens": False,  # We template with special tokens
