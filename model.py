@@ -242,11 +242,30 @@ class MyModel(AIxBlockMLBase):
 
 
                 channel_name = f"{hf_model_id}_{str(uuid.uuid4())[:8]}"
+                username = ""
+                hf_model_name = ""
+
+                try:
+                    headers = {"Authorization": f"Bearer {push_to_hub_token}"}
+                    response = requests.get("https://huggingface.co/api/whoami-v2", headers=headers)
+
+                    if response.status_code == 200:
+                        data = response.json()
+                        username = data.get("name")
+                        hf_model_name = f"{username}/{hf_model_id}"
+                        print(f"Username: {username}")
+                    else:
+                        print(f"Error: {response.status_code} - {response.text}")
+                        hf_model_name = "Token not correct"
+                except Exception as e:
+                    hf_model_name = "Token not correct"
+                    print(e)
+
         
                 # Đặt trạng thái kênh là "training"
                 CHANNEL_STATUS[channel_name] = {
                         "status": "training",
-                        "hf_model_id": hf_model_id,
+                        "hf_model_id": hf_model_name,
                         "command": command,
                         "created_at": time.time()
                     }
