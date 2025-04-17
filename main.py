@@ -1,8 +1,8 @@
-from fastapi import FastAPI, HTTPException, Response
+from fastapi import FastAPI, HTTPException, Response, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, RedirectResponse
 from typing import Dict, Any, Optional
-from model import MyModel, CHANNEL_STATUS, mcp
+from model import MyModel, mcp
 import os
 from pydantic import BaseModel
 from mcp.server.sse import SseServerTransport
@@ -37,33 +37,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-@app.get("/channels/{channel}")
-def check_channel_status(channel: str):
-    status_info = CHANNEL_STATUS.get(channel)
-    if status_info is None:
-        return {"channel": channel, "status": "not_found"}
-    return {"channel": channel, **status_info}
-
-@app.get("/channels")
-def get_all_channels():
-    if not CHANNEL_STATUS:
-        return {"message": "No channels available"}
-    
-    channels = []
-    for channel, info in CHANNEL_STATUS.items():
-        if isinstance(info, dict):
-            channels.append({
-                "channel": channel,
-                **info
-            })
-        else:
-            channels.append({
-                "channel": channel,
-                "status": info  # fallback nếu info chỉ là string
-            })
-    
-    return {"channels": channels}
 
 # Prometheus and Loki configuration
 LOKI_URL = os.getenv("LOKI_URL", "http://207.246.109.178:3100")
