@@ -304,9 +304,21 @@ class MyModel(AIxBlockMLBase):
                             print(dataset_name)
                             if dataset_name: 
                                 data_zip_dir = os.path.join(data_path, dataset_name)
-                                # if not os.path.exists(dataset_path):
+
+                                # Giải nén file đầu tiên
                                 with zipfile.ZipFile(data_zip_dir, 'r') as zip_ref:
                                     zip_ref.extractall(dataset_path)
+
+                                # Kiểm tra nếu trong dataset_path chỉ có 1 file zip => giải nén tiếp
+                                extracted_files = os.listdir(dataset_path)
+                                zip_files = [f for f in extracted_files if f.endswith('.zip')]
+
+                                if len(zip_files) == 1:
+                                    inner_zip_path = os.path.join(dataset_path, zip_files[0])
+                                    print(f"🔁 Found inner zip file: {inner_zip_path}, extracting...")
+                                    with zipfile.ZipFile(inner_zip_path, 'r') as inner_zip:
+                                        inner_zip.extractall(dataset_path)
+                                    os.remove(inner_zip_path)
 
                     import torch
                     # https://huggingface.co/docs/accelerate/en/basic_tutorials/launch
