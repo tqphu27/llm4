@@ -326,7 +326,8 @@ trainer.push_to_hub()
 # print(f"Model is trained and saved as {chk_path}")
 # trainer.save_model(chk_path)
 # push to hub
-
+output_dir = os.path.join("./data/checkpoint", hf_model_id.split("/")[-1])
+trainer.save_model(output_dir)
 # free the memory again
 del model
 del trainer
