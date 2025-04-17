@@ -86,3 +86,4 @@ huggingface_hub[hf_xet]
 apscheduler
 fastapi
 uvicorn
+mcp
