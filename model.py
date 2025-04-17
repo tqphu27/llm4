@@ -887,42 +887,49 @@ class MyModel(AIxBlockMLBase):
                     prompt = text
 
                 from huggingface_hub import login 
-                hf_access_token = kwargs.get("hf_access_token", "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")
+                hf_access_token = kwargs.get("hf_access_token", "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")
                 login(token = hf_access_token)
-                if torch.cuda.is_available():
-                    if torch.cuda.is_bf16_supported():
-                        dtype = torch.bfloat16
-                    else:
-                        dtype = torch.float16
+                def smart_pipeline(model_id: str, token: str, local_dir="./data/checkpoint", task="text-generation"):
+                    model_name = model_id.split("/")[-1]
+                    local_model_dir = os.path.join(local_dir, model_name)
 
-                    print("CUDA is available.")
-                    
-                    _model = pipeline(
-                        "text-generation",
-                        model=model_id, #model_id, #"meta-llama/Llama-3.2-3B", meta-llama/Llama-3.3-70B-Instruct
-                        torch_dtype=dtype, 
-                        device_map="auto",  # Hoặc có thể thử "cpu" nếu không ổn,
-                        max_new_tokens=256,
-                        token = "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"
-                    )
-                else:
-                    print("No GPU available, using CPU.")
-                    _model = pipeline(
-                        "text-generation",
-                        model=model_id, #"meta-llama/Llama-3.2-1B-Instruct", #"meta-llama/Llama-3.2-3B", meta-llama/Llama-3.3-70B-Instruct
-                        device_map="cpu",
-                        max_new_tokens=256,
-                        token = "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"
-                    )
-                # messages = [
-                #     {"role": "system", "content": "You are a pirate chatbot who always responds in pirate speak!"},
-                #     {"role": "user", "content": prompt},
-                # ]
-                # outputs = _model(
-                #     messages,
-                #     max_new_tokens=256,
-                # )
-                # result = _model(prompt, max_length=100)
+                    # Kiểm tra xem model đã có local chưa
+                    if os.path.exists(local_model_dir) and os.path.exists(os.path.join(local_model_dir, "config.json")):
+                        print(f"✅ Loading model from local: {local_model_dir}")
+                        model_source = local_model_dir
+                    else:
+                        print(f"☁️ Loading model from HuggingFace Hub: {model_id}")
+                        model_source = model_id
+
+                    # Xác định dtype và device
+                    if torch.cuda.is_available():
+                        if torch.cuda.is_bf16_supported():
+                            dtype = torch.bfloat16
+                        else:
+                            dtype = torch.float16
+
+                        print("Using CUDA.")
+                        pipe = pipeline(
+                            task,
+                            model=model_source,
+                            torch_dtype=dtype,
+                            device_map="auto",
+                            token=token,
+                            max_new_tokens=256
+                        )
+                    else:
+                        print("Using CPU.")
+                        pipe = pipeline(
+                            task,
+                            model=model_source,
+                            device_map="cpu",
+                            token=token,
+                            max_new_tokens=256
+                        )
+
+                    return pipe
+
+                _model = smart_pipeline(model_id, hf_access_token)
                 generated_text = qa_without_context(_model, prompt)
           
                 print(generated_text)
