@@ -317,8 +317,8 @@ except RuntimeError as e:
     else:
         raise
 
-if push_to_hub:
-    trainer.push_to_hub()
+# if push_to_hub:
+trainer.push_to_hub()
 # save model
 # MODEL_DIR = os.getenv('MODEL_DIR', './data/checkpoint')
 # FINETUNED_MODEL_NAME = os.getenv('FINETUNED_MODEL_NAME',hf_model_id)
