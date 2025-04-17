@@ -243,7 +243,6 @@ class MyModel(AIxBlockMLBase):
                 log_queue, logging_thread = start_queue(channel_log)
                 write_log(log_queue)
 
-
                 channel_name = f"{hf_model_id}_{str(uuid.uuid4())[:8]}"
                 username = ""
                 hf_model_name = ""
@@ -273,8 +272,6 @@ class MyModel(AIxBlockMLBase):
                         "created_at": time.time()
                     }
                 print(f"🚀 Đã bắt đầu training kênh: {channel_name}")
-
-            
 
                 # hyperparameter = kwargs.get("hyperparameter")
 
@@ -977,6 +974,32 @@ class MyModel(AIxBlockMLBase):
 
         elif command.lower() == "action-example":
             return {"message": "Done", "result": "Done"}
+        
+        elif command == "status":
+            channel = kwargs.get("channel", None)
+            
+            if channel:
+                # Nếu có truyền kênh cụ thể
+                status_info = CHANNEL_STATUS.get(channel)
+                if status_info is None:
+                    return {"channel": channel, "status": "not_found"}
+                elif isinstance(status_info, dict):
+                    return {"channel": channel, **status_info}
+                else:
+                    return {"channel": channel, "status": status_info}
+            else:
+                # Lấy tất cả kênh
+                if not CHANNEL_STATUS:
+                    return {"message": "No channels available"}
+                
+                channels = []
+                for ch, info in CHANNEL_STATUS.items():
+                    if isinstance(info, dict):
+                        channels.append({"channel": ch, **info})
+                    else:
+                        channels.append({"channel": ch, "status": info})
+                
+                return {"channels": channels}
         else:
             return {"message": "command not supported", "result": None}
             
