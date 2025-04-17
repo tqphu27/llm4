@@ -890,14 +890,19 @@ class MyModel(AIxBlockMLBase):
                 hf_access_token = kwargs.get("hf_access_token", "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")
                 login(token = hf_access_token)
                 def smart_pipeline(model_id: str, token: str, local_dir="./data/checkpoint", task="text-generation"):
-                    model_name = model_id.split("/")[-1]
-                    local_model_dir = os.path.join(local_dir, model_name)
+                    try:
+                        import os
+                        model_name = model_id.split("/")[-1]
+                        local_model_dir = os.path.join(local_dir, model_name)
 
-                    # Kiểm tra xem model đã có local chưa
-                    if os.path.exists(local_model_dir) and os.path.exists(os.path.join(local_model_dir, "config.json")):
-                        print(f"✅ Loading model from local: {local_model_dir}")
-                        model_source = local_model_dir
-                    else:
+                        # Kiểm tra xem model đã có local chưa
+                        if os.path.exists(local_model_dir) and os.path.exists(os.path.join(local_model_dir, "config.json")):
+                            print(f"✅ Loading model from local: {local_model_dir}")
+                            model_source = local_model_dir
+                        else:
+                            print(f"☁️ Loading model from HuggingFace Hub: {model_id}")
+                            model_source = model_id
+                    except:
                         print(f"☁️ Loading model from HuggingFace Hub: {model_id}")
                         model_source = model_id
 
