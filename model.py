@@ -239,6 +239,9 @@ class MyModel(AIxBlockMLBase):
                 # entry_file = kwargs.get("entry_file")
                 configs = kwargs.get("configs")
                 host_name = kwargs.get("host_name",HOST_NAME)
+            
+                host_name = "https://dev-us-west-1.aixblock.io"
+                token = "ebcf0ceda01518700f41dfa234b6f4aaea0b57af"
                 
                 log_queue, logging_thread = start_queue(channel_log)
                 write_log(log_queue)
