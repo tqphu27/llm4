@@ -334,7 +334,7 @@ class MyModel(AIxBlockMLBase):
                             )
                     print("===Train===")
                     # https://github.com/huggingface/accelerate/issues/1474
-                    if framework == "huggingface":
+                    if framework == "huggingface" or framework == "transformers":
                         if int(world_size) > 1:
                             if int(rank) == 0:
                                 print("master node")
