@@ -245,29 +245,29 @@ peft_config = LoraConfig(
 )
 
 training_arguments = TrainingArguments(
-        output_dir="./data/checkpoint", 
-        eval_strategy="steps",
-        do_eval=True,
-        # optim="paged_adamw_8bit",
-        per_device_train_batch_size=1,
-        # gradient_accumulation_steps=4,
-        per_device_eval_batch_size=1,
-        log_level="debug",
-        save_strategy="epoch",
-        logging_steps=10,
-        learning_rate=1e-4,
-        # fp16 = not torch.cuda.is_bf16_supported(),
-        # bf16 = torch.cuda.is_bf16_supported(),
-        eval_steps=10,
-        num_train_epochs=num_train_epochs,
-        warmup_ratio=0.1,
-        lr_scheduler_type="linear",
-        remove_unused_columns=False,
-        report_to="tensorboard", #azure_ml, comet_ml, mlflow, neptune, tensorboard, wandb, codecarbon, clearml, dagshub, flyte, dvclive
-        push_to_hub = push_to_hub,
-        push_to_hub_model_id=hf_model_id,#[project-id]-[model-name]-[datetime]
-        push_to_hub_token=push_to_hub_token,
-        no_cuda=False
+    output_dir="./data/checkpoint", 
+    eval_strategy="steps",
+    do_eval=True,
+    # optim="paged_adamw_8bit",
+    per_device_train_batch_size=1,
+    # gradient_accumulation_steps=4,
+    per_device_eval_batch_size=1,
+    log_level="debug",
+    save_strategy="epoch",
+    logging_steps=10,
+    learning_rate=1e-4,
+    # fp16 = not torch.cuda.is_bf16_supported(),
+    # bf16 = torch.cuda.is_bf16_supported(),
+    eval_steps=10,
+    num_train_epochs=num_train_epochs,
+    warmup_ratio=0.1,
+    lr_scheduler_type="linear",
+    remove_unused_columns=False,
+    report_to="tensorboard", #azure_ml, comet_ml, mlflow, neptune, tensorboard, wandb, codecarbon, clearml, dagshub, flyte, dvclive
+    push_to_hub = push_to_hub,
+    push_to_hub_model_id=hf_model_id,#[project-id]-[model-name]-[datetime]
+    push_to_hub_token=push_to_hub_token,
+    no_cuda=False
 )
 # https://stackoverflow.com/questions/78688141/how-to-choose-dataset-text-field-in-sfttrainer-hugging-face-for-my-llm-model
 
