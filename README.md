@@ -36,8 +36,6 @@ Then connect running backend to AIxBlockusing Machine Learning settings.
     ```bash
     docker-compose up --build
     ```
-   
-## API guidelines
 
 
 #### Inference module
