@@ -31,7 +31,7 @@ from aixblock_ml.model import AIxBlockMLBase
 import torch
 from transformers import pipeline
 import os
-from huggingface_hub import HfFolder
+# from huggingface_hub import HfFolder
 import wandb
 from prompt import qa_with_context, text_classification, text_summarization, qa_without_context,text_ner,chatbot_with_history
 import zipfile
@@ -39,12 +39,15 @@ import zipfile
 # Đặt token của bạn vào đây
 hf_token = os.getenv("HF_TOKEN", "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")
 # Lưu token vào local
-HfFolder.save_token(hf_token)
+# HfFolder.save_token(hf_token)
 # wandb.login('allow',"69b9681e7dc41d211e8c93a3ba9a6fb8d781404a")
 # print("Login successful")
 from huggingface_hub import login 
 hf_access_token = "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"
-login(token = hf_access_token)
+try:
+    login(token=hf_access_token)
+except Exception:
+    pass
 CUDA_VISIBLE_DEVICES=[]
 for i in range(torch.cuda.device_count()):
     CUDA_VISIBLE_DEVICES.append(i)
@@ -903,7 +906,10 @@ class MyModel(AIxBlockMLBase):
 
                 from huggingface_hub import login 
                 hf_access_token = kwargs.get("hf_access_token", "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")
-                login(token = hf_access_token)
+                try:
+                    login(token=hf_access_token)
+                except Exception:
+                    pass
                 def smart_pipeline(model_id: str, token: str, local_dir="./data/checkpoint", task="text-generation"):
                     try:
                         import os
@@ -1051,7 +1057,10 @@ class MyModel(AIxBlockMLBase):
     #     Parsed JSON Label config: {self.parsed_label_config}''')
     #     from huggingface_hub import login 
     #     hf_access_token = kwargs.get("hf_access_token", "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")
-    #     login(token = hf_access_token)
+    try:
+        login(token=hf_access_token)
+    except Exception:
+        pass
        
     #     #========================== chatbot =======================
     #     import gradio as gr
@@ -1061,7 +1070,7 @@ class MyModel(AIxBlockMLBase):
     #     from types import SimpleNamespace
     #     from loguru import logger
     #     # Log in to Hugging Face Hub
-    #     from huggingface_hub.hf_api import HfFolder; HfFolder.save_token('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')
+#     #     from huggingface_hub.hf_api import HfFolder; HfFolder.save_token('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')
 
     #     # Determine the device to use (GPU if available, otherwise CPU)
     #     device = 0 if torch.cuda.is_available() else -1
@@ -1406,11 +1415,17 @@ class MyModel(AIxBlockMLBase):
 ''')
         from huggingface_hub import login 
         hf_access_token = kwargs.get("hf_access_token", "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")
-        login(token = hf_access_token)
+        try:
+            login(token=hf_access_token)
+        except Exception:
+            pass
         def load_model(task,model_id, project_id, temperature=None, top_p=None, top_k=None, max_new_token=None):
             from huggingface_hub import login 
             hf_access_token = kwargs.get("hf_access_token", "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")
-            login(token = hf_access_token)
+            try:
+                login(token=hf_access_token)
+            except Exception:
+                pass
             if torch.cuda.is_available():
                 if torch.cuda.is_bf16_supported():
                     dtype = torch.bfloat16

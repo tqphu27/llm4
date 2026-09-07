@@ -1,4 +1,4 @@
-from huggingface_hub import HfFolder
+# from huggingface_hub import HfFolder
 import os
 import torch
 from transformers import pipeline
@@ -6,11 +6,14 @@ from transformers import pipeline
 # Đặt token của bạn vào đây
 hf_token = os.getenv("HF_TOKEN", "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")
 # Lưu token vào local
-HfFolder.save_token(hf_token)
+# HfFolder.save_token(hf_token)
 
 from huggingface_hub import login 
 hf_access_token = "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"
-login(token = hf_access_token)
+try:
+    login(token=hf_access_token)
+except Exception:
+    pass
 
 if torch.cuda.is_available():
     if torch.cuda.is_bf16_supported():

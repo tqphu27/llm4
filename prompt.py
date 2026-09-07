@@ -1,5 +1,5 @@
 from langchain_huggingface.llms import HuggingFacePipeline
-from langchain.prompts import PromptTemplate
+from langchain_core.prompts import PromptTemplate
 # from langchain.chains import LLMChain
 import re
 
