@@ -62,23 +62,7 @@ if torch.cuda.is_available():
 
     print("CUDA is available.")
     
-    _model = pipeline(
-        "text-generation",
-        model="deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B", 
-        torch_dtype=dtype, 
-        device_map="auto",  # Hoặc có thể thử "cpu" nếu không ổn,
-        max_new_tokens=256,
-        token = "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"
-    )
-else:
-    print("No GPU available, using CPU.")
-    _model = pipeline(
-        "text-generation",
-        model="deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B", 
-        device_map="cpu",
-        max_new_tokens=256,
-        token = "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"
-    )
+    _model = None  # Lazy loaded on demand
 
 # from typing import List, Dict, Optional
 from aixblock_ml.model import AIxBlockMLBase

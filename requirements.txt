@@ -15,7 +15,7 @@ prometheus-client
 grafana-api
 gputil
 psutil
-mcp
+mcp<2
 wandb
 requests
 langchain
