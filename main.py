@@ -1,3 +1,40 @@
+import huggingface_hub
+if not hasattr(huggingface_hub, 'HfFolder'):
+    class HfFolder:
+        @staticmethod
+        def get_token():
+            try:
+                from huggingface_hub import get_token
+                return get_token()
+            except:
+                return None
+        @staticmethod
+        def save_token(token):
+            try:
+                from huggingface_hub import login
+                login(token)
+            except:
+                pass
+    huggingface_hub.HfFolder = HfFolder
+
+try:
+    import gradio_client.utils
+    orig_json_schema = gradio_client.utils._json_schema_to_python_type
+    def safe_json_schema(schema, defs=None):
+        if not isinstance(schema, dict):
+            return 'Any'
+        return orig_json_schema(schema, defs)
+    gradio_client.utils._json_schema_to_python_type = safe_json_schema
+
+    orig_get_type = gradio_client.utils.get_type
+    def safe_get_type(schema):
+        if not isinstance(schema, dict):
+            return 'Any'
+        return orig_get_type(schema)
+    gradio_client.utils.get_type = safe_get_type
+except Exception:
+    pass
+
 from fastapi import FastAPI, HTTPException, Response, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, RedirectResponse
@@ -134,9 +171,6 @@ async def handle_sse(request: Request):
             write_stream,
             mcp._mcp_server.create_initialization_options(),
         )
-# @app.on_event("shutdown")
-# async def shutdown_event():
-#     scheduler.shutdown()
 
 if __name__ == "__main__":
     import uvicorn
